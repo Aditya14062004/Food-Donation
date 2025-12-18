@@ -1,34 +1,29 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-// defining the user schema
 const ngoSchema = new mongoose.Schema({
-    name: { type: String, required: true},
-    email: { type: String, required: true, unique: true},
-    password: { type: String, required: true},
-    otp: { type: String},
-    otpExpiry: { type: Date},
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
+  role: { type: String, default: 'ngo' },
+  address: String,
+  location: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], required: true }
+  },
+  otp: String,
+  otpExpiry: Date
 });
+
+ngoSchema.index({ location: '2dsphere' });
 
 ngoSchema.pre('save', async function () {
-    // If password not modified, skip
-    if (!this.isModified('password')) return;
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+  if (!this.isModified('password')) return;
+  this.password = await bcrypt.hash(this.password, 10);
 });
 
-ngoSchema.methods.comparePassword = async function(candidatePassword){
-    try {
-        // use bcrypt to compare the provided password with the hashed password
-        const isMatch = await bcrypt.compare(candidatePassword, this.password);
-        return isMatch;
-    } catch (error) {
-        throw error;
-    }
-}
+ngoSchema.methods.comparePassword = function (p) {
+  return bcrypt.compare(p, this.password);
+};
 
-// Creating user model
-const NGO = mongoose.model('NGO', ngoSchema);
-module.exports = NGO;
+module.exports = mongoose.model('NGO', ngoSchema);

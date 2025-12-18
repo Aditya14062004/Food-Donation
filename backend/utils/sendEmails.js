@@ -1,27 +1,23 @@
 const { Resend } = require("resend");
-require("dotenv").config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const sendEmail = async (to, subject, text) => {
-  console.log("Attempting to send email via Resend...");
-  console.log("To:", to);
-
+module.exports = async (to, subject, text) => {
   try {
+    console.log(`📧 Sending email to ${to}`);
+
     const result = await resend.emails.send({
-      from: "Aditya Auth App <onboarding@resend.dev>",  // change name only, keep email
+      from: "Aditya Auth App <onboarding@resend.dev>", // keep email, change name only
       to,
       subject,
       text,
-      html: `<p>${text}</p>`, // basic HTML fallback
+      html: `<p>${text}</p>`
     });
 
-    console.log("✅ Email sent successfully:", result);
+    console.log("✅ Email sent successfully:", result.id);
     return result;
-  } catch (err) {
-    console.error("❌ RESEND EMAIL ERROR:", err);
-    throw err;
+  } catch (error) {
+    console.error("❌ Email sending failed:", error.message);
+    throw error;
   }
 };
-
-module.exports = sendEmail;

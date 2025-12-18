@@ -1,34 +1,22 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-// defining the user schema
 const adminSchema = new mongoose.Schema({
-    name: { type: String, required: true},
-    email: { type: String, required: true, unique: true},
-    password: { type: String, required: true},
-    otp: { type: String},
-    otpExpiry: { type: Date},
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
+  role: { type: String, default: 'admin' },
+  otp: String,
+  otpExpiry: Date
 });
 
 adminSchema.pre('save', async function () {
-    // If password not modified, skip
-    if (!this.isModified('password')) return;
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+  if (!this.isModified('password')) return;
+  this.password = await bcrypt.hash(this.password, 10);
 });
 
-adminSchema.methods.comparePassword = async function(candidatePassword){
-    try {
-        // use bcrypt to compare the provided password with the hashed password
-        const isMatch = await bcrypt.compare(candidatePassword, this.password);
-        return isMatch;
-    } catch (error) {
-        throw error;
-    }
-}
+adminSchema.methods.comparePassword = function (p) {
+  return bcrypt.compare(p, this.password);
+};
 
-// Creating user model
-const Admin = mongoose.model('Admin', adminSchema);
-module.exports = Admin;
+module.exports = mongoose.model('Admin', adminSchema);
