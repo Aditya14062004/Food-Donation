@@ -23,3 +23,13 @@ exports.getNearestNGOs = async (req, res) => {
 
   res.json(ngos);
 };
+
+exports.getMyDonations = async (req, res) => {
+  const donations = await Donation.find({
+    restaurant: req.user.id,
+  })
+    .populate("ngo", "name contactNo")
+    .sort({ createdAt: -1 });
+
+  res.json(donations);
+};

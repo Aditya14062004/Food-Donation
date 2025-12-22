@@ -1,28 +1,36 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
 const restaurantSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
-  role: { type: String, default: 'restaurant' },
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+
+  contactNo: { type: String, required: true },
+  address: { type: String, required: true },
+
   location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: true }
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point",
+    },
+    coordinates: {
+      type: [Number], // [lng, lat]
+      required: true,
+    },
   },
+
   otp: String,
-  otpExpiry: Date
+  otpExpiry: Date,
 });
 
-restaurantSchema.index({ location: '2dsphere' });
+restaurantSchema.index({ location: "2dsphere" });
 
-restaurantSchema.pre('save', async function () {
-  if (!this.isModified('password')) return;
+// ✅ CORRECT PASSWORD HASHING
+restaurantSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-restaurantSchema.methods.comparePassword = function (p) {
-  return bcrypt.compare(p, this.password);
-};
-
-module.exports = mongoose.model('Restaurant', restaurantSchema);
+module.exports = mongoose.model("Restaurant", restaurantSchema);

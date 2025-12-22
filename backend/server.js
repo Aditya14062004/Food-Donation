@@ -1,9 +1,27 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');          // ✅ ADD
 const connectDB = require('./config/db');
 
 const app = express();
 connectDB();
+
+// Request logger
+const logRequest = (req, res, next) => {
+    console.log(`[${new Date().toLocaleString()}] Request to: ${req.originalUrl}`);
+    next();
+};
+app.use(logRequest);
+
+// ✅ Allow frontend origin (Vite runs on port 5173)
+app.use(
+  cors({
+    origin: " http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/authRoutes'));

@@ -1,9 +1,9 @@
-const router = require('express').Router();
-const auth = require('../middlewares/authMiddleware');
-const { acceptDonation } = require('../controllers/donationController');
-const { getNearestRestaurants } = require('../controllers/ngoController');
+const router = require("express").Router();
+const auth = require("../middlewares/authMiddleware");
+const { getAvailableDonations } = require("../controllers/ngoController");
+const { acceptDonation } = require("../controllers/donationController");
 
-router.post('/accept/:id', auth('ngo'), acceptDonation);
-router.get('/nearest-restaurants', auth('ngo'), getNearestRestaurants);
+router.get("/available-donations", auth("ngo"), getAvailableDonations);
+router.post("/accept-donation/:id", auth("ngo"), acceptDonation);
 
 module.exports = router;

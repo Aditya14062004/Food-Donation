@@ -17,50 +17,63 @@ const Auth = () => {
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Get browser location
   const getCoordinates = () =>
     new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          resolve([
-            pos.coords.longitude,
-            pos.coords.latitude
-          ]),
-        () => reject("Location permission denied")
+        (pos) => {
+          const accuracy = pos.coords.accuracy; // meters
+
+          // 🔴 Reject very inaccurate locations
+          if (accuracy > 1000) {
+            reject("Location accuracy too low. Please enable GPS.");
+            return;
+          }
+
+          const coordinates = [
+            Number(pos.coords.longitude),
+            Number(pos.coords.latitude),
+          ];
+
+          console.log("Coordinates sent:", coordinates, "Accuracy:", accuracy);
+          resolve(coordinates);
+        },
+        (err) => reject(err.message),
+        {
+          enableHighAccuracy: true, // 🔥 IMPORTANT
+          timeout: 10000,
+          maximumAge: 0
+        }
       );
     });
 
-  // Signup
   const handleSignup = async () => {
     try {
       let payload = {
         name: form.name,
         email: form.email,
         password: form.password,
-        role
+        role,
       };
 
       if (role === "ngo" || role === "restaurant") {
         payload.coordinates = await getCoordinates();
       }
-
       if (role === "ngo") payload.address = form.address;
 
       await api.post("/auth/signup", payload);
-      alert("Signup successful! Please login.");
+      alert("Signup successful. Please login.");
       setIsSignup(false);
     } catch (err) {
       alert(err.response?.data?.message || "Signup failed");
     }
   };
 
-  // Login
   const handleLogin = async () => {
     try {
       const res = await api.post("/auth/login", {
         email: form.email,
         password: form.password,
-        role
+        role,
       });
 
       localStorage.setItem("token", res.data.token);
@@ -76,13 +89,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-
+      <div className="bg-white p-8 rounded-lg shadow w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6">
-          {isSignup ? "Create Account" : "Login"}
+          {isSignup ? "Signup" : "Login"}
         </h2>
 
-        {/* Role */}
         <select
           className="w-full border p-2 rounded mb-3"
           value={role}
@@ -93,7 +104,6 @@ const Auth = () => {
           <option value="restaurant">Restaurant</option>
         </select>
 
-        {/* Name */}
         {isSignup && (
           <input
             className="w-full border p-2 rounded mb-3"
@@ -103,7 +113,6 @@ const Auth = () => {
           />
         )}
 
-        {/* Email */}
         <input
           className="w-full border p-2 rounded mb-3"
           name="email"
@@ -111,7 +120,6 @@ const Auth = () => {
           onChange={handleChange}
         />
 
-        {/* Password */}
         <input
           type="password"
           className="w-full border p-2 rounded mb-3"
@@ -120,7 +128,6 @@ const Auth = () => {
           onChange={handleChange}
         />
 
-        {/* Address (NGO only) */}
         {isSignup && role === "ngo" && (
           <input
             className="w-full border p-2 rounded mb-3"
@@ -130,15 +137,13 @@ const Auth = () => {
           />
         )}
 
-        {/* Action Button */}
         <button
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
           onClick={isSignup ? handleSignup : handleLogin}
         >
           {isSignup ? "Signup" : "Login"}
         </button>
 
-        {/* Toggle */}
         <p
           className="text-center text-sm mt-4 text-blue-600 cursor-pointer"
           onClick={() => setIsSignup(!isSignup)}
@@ -148,7 +153,6 @@ const Auth = () => {
             : "Don't have an account? Signup"}
         </p>
 
-        {/* Forgot password */}
         {!isSignup && (
           <p
             className="text-center text-sm mt-2 text-red-500 cursor-pointer"

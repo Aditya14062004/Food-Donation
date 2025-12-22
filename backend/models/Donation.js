@@ -1,18 +1,38 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const donationSchema = new mongoose.Schema({
-  restaurant: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant' },
-  ngo: { type: mongoose.Schema.Types.ObjectId, ref: 'NGO' },
-  foodName: String,
-  quantity: String,
-  pickupAddress: String,
-  pickupLocation: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: [Number]
+const donationSchema = new mongoose.Schema(
+  {
+    foodName: { type: String, required: true },
+    quantity: { type: String, required: true },
+
+    restaurant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: true,
+    },
+
+    ngo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "NGO",
+      default: null,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "accepted"],
+      default: "pending",
+    },
+
+    pickupLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: [Number],
+    },
   },
-  status: { type: String, default: 'Pending' }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-donationSchema.index({ pickupLocation: '2dsphere' });
-
-module.exports = mongoose.model('Donation', donationSchema);
+module.exports = mongoose.model("Donation", donationSchema);
