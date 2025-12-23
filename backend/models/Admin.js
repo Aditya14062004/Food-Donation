@@ -6,6 +6,9 @@ const adminSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
   role: { type: String, default: 'admin' },
+  isVerified: {type: Boolean, default: false},
+  emailOtp: String,
+  emailOtpExpiry: Date,
   otp: String,
   otpExpiry: Date
 });

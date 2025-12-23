@@ -21,6 +21,9 @@ const restaurantSchema = new mongoose.Schema({
     },
   },
 
+  isVerified: {type: Boolean, default: false},
+  emailOtp: String,
+  emailOtpExpiry: Date,
   otp: String,
   otpExpiry: Date,
 });

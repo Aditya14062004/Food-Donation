@@ -5,9 +5,7 @@ const NGO = require("../models/NGO");
 const Restaurant = require("../models/Restaurant");
 const sendEmail = require("../utils/sendEmails");
 
-// ================= UTILITIES =================
-
-// Get model based on role
+// ================= HELPERS =================
 const getModel = (role) => {
   if (role === "admin") return Admin;
   if (role === "ngo") return NGO;
@@ -15,28 +13,27 @@ const getModel = (role) => {
   return null;
 };
 
-// Generate JWT token
-const generateToken = (userId, role) => {
-  return jwt.sign(
-    { id: userId, role },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-};
+const generateToken = (user, role) =>
+  jwt.sign({ id: user._id, role }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 
 // ================= SIGNUP =================
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password, role, address, contactNo, coordinates } =
-      req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      address,
+      contactNo,
+      coordinates,
+    } = req.body;
 
     const Model = getModel(role);
     if (!Model) {
       return res.status(400).json({ message: "Invalid role" });
-    }
-
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: "Missing required fields" });
     }
 
     const exists = await Model.findOne({ email });
@@ -44,43 +41,74 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
+    // 🔐 Email OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
     const userData = {
       name,
       email,
       password,
+      isVerified: false,
+      emailOtp: otp,
+      emailOtpExpiry: Date.now() + 10 * 60 * 1000,
     };
 
-    // NGO & Restaurant extra fields
     if (role !== "admin") {
-      if (
-        !address ||
-        !contactNo ||
-        !coordinates ||
-        !Array.isArray(coordinates) ||
-        coordinates.length !== 2
-      ) {
-        return res.status(400).json({
-          message: "Address, contact number and valid coordinates are required",
-        });
-      }
-
       userData.address = address;
       userData.contactNo = contactNo;
       userData.location = {
         type: "Point",
-        coordinates, // [lng, lat]
+        coordinates,
       };
     }
 
     const user = new Model(userData);
-    await user.save();
+    await user.save(); // ✅ now valid
+
+    await sendEmail(
+      email,
+      "Verify your email",
+      `Your email verification OTP is: ${otp}`
+    );
 
     res.status(201).json({
       success: true,
-      message: "Registered successfully",
+      message: "Signup successful. Please verify your email.",
     });
   } catch (error) {
     console.error("SIGNUP ERROR:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= VERIFY EMAIL OTP =================
+exports.verifyEmailOtp = async (req, res) => {
+  try {
+    const { email, role, otp } = req.body;
+    const Model = getModel(role);
+
+    const user = await Model.findOne({ email });
+
+    if (
+      !user ||
+      user.emailOtp !== otp ||
+      user.emailOtpExpiry < Date.now()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.isVerified = true;
+    user.emailOtp = null;
+    user.emailOtpExpiry = null;
+
+    await user.save(); // ✅ inside async function
+
+    res.json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    console.error("VERIFY EMAIL ERROR:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -89,15 +117,17 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
-
     const Model = getModel(role);
-    if (!Model) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
 
     const user = await Model.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (!user.isVerified) {
+      return res
+        .status(403)
+        .json({ message: "Please verify your email before login" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -105,7 +135,7 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = generateToken(user._id, role);
+    const token = generateToken(user, role);
 
     res.json({
       success: true,
@@ -118,15 +148,11 @@ exports.login = async (req, res) => {
   }
 };
 
-// ================= GENERATE OTP =================
+// ================= FORGOT PASSWORD =================
 exports.generateOTP = async (req, res) => {
   try {
     const { email, role } = req.body;
-
     const Model = getModel(role);
-    if (!Model) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
 
     const user = await Model.findOne({ email });
     if (!user) {
@@ -134,21 +160,14 @@ exports.generateOTP = async (req, res) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     user.otp = otp;
-    user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+
     await user.save();
 
-    await sendEmail(
-      email,
-      "Password Reset OTP",
-      `Your OTP is ${otp}`
-    );
+    await sendEmail(email, "Password Reset OTP", `Your OTP is ${otp}`);
 
-    res.json({
-      success: true,
-      message: "OTP sent successfully",
-    });
+    res.json({ success: true, message: "OTP sent" });
   } catch (error) {
     console.error("OTP ERROR:", error);
     res.status(500).json({ message: "Server error" });
@@ -159,24 +178,18 @@ exports.generateOTP = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { email, role, otp, newPassword } = req.body;
-
     const Model = getModel(role);
-    if (!Model) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
 
     const user = await Model.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
 
-    if (user.otp !== otp || user.otpExpiry < Date.now()) {
+    if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
     user.password = newPassword;
-    user.otp = undefined;
-    user.otpExpiry = undefined;
+    user.otp = null;
+    user.otpExpiry = null;
+
     await user.save();
 
     await sendEmail(
@@ -185,10 +198,7 @@ exports.resetPassword = async (req, res) => {
       "Your password has been updated successfully"
     );
 
-    res.json({
-      success: true,
-      message: "Password reset successful",
-    });
+    res.json({ success: true, message: "Password updated" });
   } catch (error) {
     console.error("RESET PASSWORD ERROR:", error);
     res.status(500).json({ message: "Server error" });

@@ -14,7 +14,7 @@ const First = () => {
 
   const navigate = useNavigate();
 
-  // Convert address → coordinates
+  // Convert address → coordinates (OpenStreetMap)
   const getCoordinatesFromAddress = async (addr) => {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -30,14 +30,9 @@ const First = () => {
     e.preventDefault();
 
     try {
-      // ---------- SIGNUP ----------
+      // ================= SIGNUP =================
       if (mode === "signup") {
-        const payload = {
-          name,
-          email,
-          password,
-          role,
-        };
+        const payload = { name, email, password, role };
 
         if (role !== "admin") {
           payload.address = address;
@@ -46,12 +41,13 @@ const First = () => {
         }
 
         await api.post("/auth/signup", payload);
-        alert("Signup successful. Please login.");
-        setMode("login");
+
+        alert("Signup successful. Please verify your email.");
+        navigate("/verify-email", { state: { email, role } });
         return;
       }
 
-      // ---------- LOGIN ----------
+      // ================= LOGIN =================
       const { data } = await api.post("/auth/login", {
         email,
         password,
