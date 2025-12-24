@@ -34,21 +34,21 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
       <form
         onSubmit={verifyOtp}
-        className="bg-white w-80 p-8 rounded-lg shadow-xl flex flex-col gap-4"
+        className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 flex flex-col gap-4 text-white"
       >
-        <h2 className="text-xl font-semibold text-center">
-          Verify Email
+        <h2 className="text-2xl font-bold text-center">
+          Verify Your Email
         </h2>
 
-        <p className="text-sm text-center text-gray-500">
-          OTP sent to <b>{state.email}</b>
+        <p className="text-sm text-center text-indigo-200">
+          OTP sent to <span className="font-semibold">{state.email}</span>
         </p>
 
         <input
-          className="border rounded p-2"
+          className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
           placeholder="Enter OTP"
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
@@ -57,10 +57,17 @@ const VerifyEmail = () => {
 
         <button
           disabled={loading}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+          className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg disabled:opacity-50"
         >
-          {loading ? "Verifying..." : "Verify"}
+          {loading ? "Verifying..." : "Verify Email"}
         </button>
+
+        <p
+          className="text-sm text-center text-purple-300 cursor-pointer hover:underline"
+          onClick={() => navigate("/")}
+        >
+          Back to Login
+        </p>
       </form>
     </div>
   );

@@ -46,29 +46,29 @@ const PasswordForgot = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
       <form
         onSubmit={step === "otp" ? generateOtp : resetPassword}
-        className="bg-white w-80 sm:w-[360px] p-8 rounded-lg shadow-xl flex flex-col gap-4"
+        className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 flex flex-col gap-4 text-white"
       >
-        <h2 className="text-2xl font-semibold text-center text-gray-700">
+        <h2 className="text-2xl font-bold text-center">
           {step === "otp" ? "Forgot Password" : "Reset Password"}
         </h2>
 
         {/* ROLE */}
         <select
-          className="border rounded p-2"
+          className="bg-white/20 border border-white/30 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
           value={role}
           onChange={(e) => setRole(e.target.value)}
         >
-          <option value="admin">Admin</option>
-          <option value="ngo">NGO</option>
-          <option value="restaurant">Restaurant</option>
+          <option className="text-black" value="admin">Admin</option>
+          <option className="text-black" value="ngo">NGO</option>
+          <option className="text-black" value="restaurant">Restaurant</option>
         </select>
 
         {/* EMAIL */}
         <input
-          className="border rounded p-2"
+          className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
           placeholder="Email"
           type="email"
           value={email}
@@ -79,7 +79,7 @@ const PasswordForgot = () => {
         {step === "reset" && (
           <>
             <input
-              className="border rounded p-2"
+              className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
@@ -87,7 +87,7 @@ const PasswordForgot = () => {
             />
 
             <input
-              className="border rounded p-2"
+              className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="New Password"
               type="password"
               value={newPassword}
@@ -99,7 +99,7 @@ const PasswordForgot = () => {
 
         <button
           disabled={loading}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded transition"
+          className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg disabled:opacity-50"
         >
           {loading
             ? "Please wait..."
@@ -109,7 +109,7 @@ const PasswordForgot = () => {
         </button>
 
         <p
-          className="text-sm text-center text-blue-500 cursor-pointer"
+          className="text-sm text-center text-purple-300 cursor-pointer hover:underline"
           onClick={() => navigate("/")}
         >
           Back to Login

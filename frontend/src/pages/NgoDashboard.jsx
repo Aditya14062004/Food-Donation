@@ -12,8 +12,7 @@ const NgoDashboard = () => {
       try {
         const res = await api.get("/ngo/available-donations");
         setDonations(res.data);
-      } catch (error) {
-        console.error(error);
+      } catch {
         alert("Failed to load donations");
       } finally {
         setLoading(false);
@@ -27,7 +26,7 @@ const NgoDashboard = () => {
       await api.post(`/ngo/accept-donation/${id}`);
       alert("Donation accepted");
       setDonations((prev) => prev.filter((d) => d._id !== id));
-    } catch (error) {
+    } catch {
       alert("Failed to accept donation");
     }
   };
@@ -36,15 +35,15 @@ const NgoDashboard = () => {
     <>
       <Header />
 
-      <div className="p-6">
-        <h2 className="text-2xl font-semibold mb-4 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 text-white px-4 pb-10">
+        <h2 className="text-2xl font-semibold mb-8 text-center pt-10">
           Available Donations Near You
         </h2>
 
         {loading ? (
-          <p className="text-center text-gray-500">Loading...</p>
+          <p className="text-center text-indigo-200">Loading...</p>
         ) : donations.length === 0 ? (
-          <p className="text-center text-gray-500">
+          <p className="text-center text-indigo-200">
             No donations available nearby
           </p>
         ) : (
