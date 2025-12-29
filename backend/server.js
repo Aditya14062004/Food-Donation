@@ -16,7 +16,7 @@ app.use(logRequest);
 // ✅ Allow frontend origin (Vite runs on port 5173)
 app.use(
   cors({
-    origin: ["https://beamish-kataifi-95ab4c.netlify.app/", "https://neon-speculoos-b5febd.netlify.app"],
+    origin: ["https://beamish-kataifi-95ab4c.netlify.app", "https://neon-speculoos-b5febd.netlify.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
