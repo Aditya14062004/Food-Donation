@@ -8,10 +8,6 @@ const LocationCard = ({ title, subtitle, contactNo, distanceKm }) => (
       📍 {subtitle}
     </p>
 
-    <p className="text-sm text-indigo-200 mb-1">
-      📞 {contactNo}
-    </p>
-
     <p className="text-sm font-medium text-green-400">
       {distanceKm} km away
     </p>
