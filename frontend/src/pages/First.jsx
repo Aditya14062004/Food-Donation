@@ -1,17 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import api from "../api/api";
 
+const inputClass =
+  "bg-white/20 border border-white/30 rounded-lg px-4 py-2 mt-1 mb-1 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white";
+
+const errorClass = "text-red-400 text-sm mb-2";
+
 const First = () => {
-  const [mode, setMode] = useState("login");
-  const [role, setRole] = useState("restaurant");
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [address, setAddress] = useState("");
-  const [contactNo, setContactNo] = useState("");
-
   const navigate = useNavigate();
 
   const getCoordinatesFromAddress = async (addr) => {
@@ -25,27 +23,75 @@ const First = () => {
     return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
   };
 
-  const submitHandler = async (e) => {
-    e.preventDefault();
+  const initialValues = {
+    mode: "login",
+    role: "restaurant",
+    name: "",
+    email: "",
+    password: "",
+    address: "",
+    contactNo: "",
+  };
+
+  const validationSchema = Yup.object({
+    role: Yup.string().required(),
+
+    name: Yup.string().when("mode", {
+      is: "signup",
+      then: () => Yup.string().required("Name is required"),
+    }),
+
+    email: Yup.string()
+      .email("Invalid email")
+      .required("Email is required"),
+
+    password: Yup.string()
+      .min(6, "Minimum 6 characters")
+      .required("Password is required"),
+
+    address: Yup.string().when(["mode", "role"], {
+      is: (mode, role) => mode === "signup" && role !== "admin",
+      then: () => Yup.string().required("Address is required"),
+    }),
+
+    contactNo: Yup.string().when(["mode", "role"], {
+      is: (mode, role) => mode === "signup" && role !== "admin",
+      then: () =>
+        Yup.string()
+          .matches(/^[0-9]{10}$/, "Enter valid 10-digit number")
+          .required("Contact number is required"),
+    }),
+  });
+
+  const submitHandler = async (values, { setSubmitting }) => {
     try {
+      const { mode, role } = values;
+
       if (mode === "signup") {
-        const payload = { name, email, password, role };
+        const payload = {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          role,
+        };
 
         if (role !== "admin") {
-          payload.address = address;
-          payload.contactNo = contactNo;
-          payload.coordinates = await getCoordinatesFromAddress(address);
+          payload.address = values.address;
+          payload.contactNo = values.contactNo;
+          payload.coordinates = await getCoordinatesFromAddress(values.address);
         }
 
         await api.post("/auth/signup", payload);
         alert("Signup successful. Please verify your email.");
-        navigate("/verify-email", { state: { email, role } });
+        navigate("/verify-email", {
+          state: { email: values.email, role },
+        });
         return;
       }
 
       const { data } = await api.post("/auth/login", {
-        email,
-        password,
+        email: values.email,
+        password: values.password,
         role,
       });
 
@@ -54,120 +100,144 @@ const First = () => {
       navigate(`/${role}`);
     } catch (err) {
       alert(err.response?.data?.message || err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
-      <form
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
         onSubmit={submitHandler}
-        className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 flex flex-col gap-4 text-white"
       >
-        <h2 className="text-2xl font-bold text-center mb-2">
-          {mode === "login" ? "Welcome Back" : "Create Account"}
-        </h2>
+        {({ values, setFieldValue, isSubmitting }) => (
+          <Form className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 flex flex-col gap-3 text-white">
+            <h2 className="text-2xl font-bold text-center">
+              {values.mode === "login" ? "Welcome Back" : "Create Account"}
+            </h2>
 
-        <p className="text-sm text-center text-indigo-200 mb-4">
-          {mode === "login"
-            ? "Login to continue making an impact"
-            : "Join us in reducing food waste"}
-        </p>
+            <p className="text-sm text-center text-indigo-200 mb-2">
+              {values.mode === "login"
+                ? "Login to continue making an impact"
+                : "Join us in reducing food waste"}
+            </p>
 
-        {/* ROLE */}
-        <select
-          className="bg-white/20 border border-white/30 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
-          <option className="text-black" value="admin">Admin</option>
-          <option className="text-black" value="ngo">NGO</option>
-          <option className="text-black" value="restaurant">Restaurant</option>
-        </select>
+            {/* ROLE */}
+            <Field as="select" name="role" className={inputClass}>
+              <option className="text-black" value="admin">
+                Admin
+              </option>
+              <option className="text-black" value="ngo">
+                NGO
+              </option>
+              <option className="text-black" value="restaurant">
+                Restaurant
+              </option>
+            </Field>
 
-        {/* NAME */}
-        {mode === "signup" && (
-          <input
-            className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            placeholder="Name"
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        )}
+            {/* NAME */}
+            {values.mode === "signup" && (
+              <>
+                <Field name="name" placeholder="Name" className={inputClass} />
+                <ErrorMessage name="name" component="p" className={errorClass} />
+              </>
+            )}
 
-        {/* EMAIL */}
-        <input
-          className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          placeholder="Email"
-          type="email"
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        {/* PASSWORD */}
-        <input
-          className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          placeholder="Password"
-          type="password"
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        {/* ADDRESS + CONTACT */}
-        {mode === "signup" && role !== "admin" && (
-          <>
-            <input
-              className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Address (e.g. Rajendra Nagar, Indore)"
-              onChange={(e) => setAddress(e.target.value)}
-              required
+            {/* EMAIL */}
+            <Field
+              name="email"
+              type="email"
+              placeholder="Email"
+              className={inputClass}
             />
-            <input
-              className="bg-white/20 border border-white/30 rounded-lg p-2 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Contact Number"
-              onChange={(e) => setContactNo(e.target.value)}
-              required
+            <ErrorMessage name="email" component="p" className={errorClass} />
+
+            {/* PASSWORD */}
+            <Field
+              name="password"
+              type="password"
+              placeholder="Password"
+              className={inputClass}
             />
-          </>
-        )}
+            <ErrorMessage
+              name="password"
+              component="p"
+              className={errorClass}
+            />
 
-        {/* FORGOT PASSWORD */}
-        {mode === "login" && (
-          <p
-            className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
-            onClick={() => navigate("/forgotpassword")}
-          >
-            Forgot password?
-          </p>
-        )}
+            {/* ADDRESS + CONTACT */}
+            {values.mode === "signup" && values.role !== "admin" && (
+              <>
+                <Field
+                  name="address"
+                  placeholder="Address (e.g. Rajendra Nagar, Indore)"
+                  className={inputClass}
+                />
+                <ErrorMessage
+                  name="address"
+                  component="p"
+                  className={errorClass}
+                />
 
-        <button className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg">
-          {mode === "login" ? "Login" : "Sign Up"}
-        </button>
+                <Field
+                  name="contactNo"
+                  placeholder="Contact Number"
+                  className={inputClass}
+                />
+                <ErrorMessage
+                  name="contactNo"
+                  component="p"
+                  className={errorClass}
+                />
+              </>
+            )}
 
-        <p className="text-sm text-center text-indigo-200 mt-2">
-          {mode === "login" ? (
-            <>
-              Don’t have an account?{" "}
-              <span
-                className="text-purple-400 cursor-pointer hover:underline"
-                onClick={() => setMode("signup")}
+            {/* FORGOT PASSWORD */}
+            {values.mode === "login" && (
+              <p
+                className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
+                onClick={() => navigate("/forgotpassword")}
               >
-                Sign up
-              </span>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <span
-                className="text-purple-400 cursor-pointer hover:underline"
-                onClick={() => setMode("login")}
-              >
-                Login
-              </span>
-            </>
-          )}
-        </p>
-      </form>
+                Forgot password?
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg"
+            >
+              {values.mode === "login" ? "Login" : "Sign Up"}
+            </button>
+
+            <p className="text-sm text-center text-indigo-200 mt-2">
+              {values.mode === "login" ? (
+                <>
+                  Don’t have an account?{" "}
+                  <span
+                    className="text-purple-400 cursor-pointer hover:underline"
+                    onClick={() => setFieldValue("mode", "signup")}
+                  >
+                    Sign up
+                  </span>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <span
+                    className="text-purple-400 cursor-pointer hover:underline"
+                    onClick={() => setFieldValue("mode", "login")}
+                  >
+                    Login
+                  </span>
+                </>
+              )}
+            </p>
+          </Form>
+        )}
+      </Formik>
     </div>
   );
 };
