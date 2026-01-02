@@ -1,0 +1,28 @@
+meta {
+  name: Signup
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/api/auth/signup
+  body: text
+  auth: inherit
+}
+
+body:text {
+  {
+    "name": "ABC Restaurant",
+    "email": "abc@gmail.com",
+    "password": "123456",
+    "role": "restaurant",
+    "address": "Rajendra Nagar, Indore",
+    "contactNo": "9876543210",
+    "coordinates": [75.8577, 22.7196]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

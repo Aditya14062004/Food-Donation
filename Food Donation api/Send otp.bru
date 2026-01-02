@@ -1,0 +1,23 @@
+meta {
+  name: Send otp
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:3000/api/auth/genrate-otp
+  body: text
+  auth: inherit
+}
+
+body:text {
+  {
+    "email": "abc@gmail.com",
+    "role": "ngo"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

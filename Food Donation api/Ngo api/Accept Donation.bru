@@ -1,0 +1,22 @@
+meta {
+  name: Accept Donation
+  type: http
+  seq: 2
+}
+
+post {
+  url: '''
+    http://localhost:3000/api/ngo/accept-donation/:donationId
+    
+'''
+  body: none
+  auth: inherit
+}
+
+params:path {
+  donationId: 
+}
+
+settings {
+  encodeUrl: true
+}

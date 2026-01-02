@@ -1,0 +1,24 @@
+meta {
+  name: Verify email otp
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:3000/api/auth/verify-email
+  body: text
+  auth: inherit
+}
+
+body:text {
+  {
+    "email": "abc@gmail.com",
+    "role": "restaurant",
+    "otp": "123456"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
