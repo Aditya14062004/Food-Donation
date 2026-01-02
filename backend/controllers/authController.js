@@ -63,7 +63,7 @@ exports.signup = async (req, res) => {
     }
 
     const user = new Model(userData);
-    await user.save(); // ✅ now valid
+    await user.save();
 
     await sendEmail(
       email,
@@ -82,7 +82,7 @@ exports.signup = async (req, res) => {
 };
 
 // ================= VERIFY EMAIL OTP =================
-exports.verifyEmailOtp = async (req, res) => {
+exports.verifyEmail = async (req, res) => {
   try {
     const { email, role, otp } = req.body;
     const Model = getModel(role);
@@ -101,7 +101,7 @@ exports.verifyEmailOtp = async (req, res) => {
     user.emailOtp = null;
     user.emailOtpExpiry = null;
 
-    await user.save(); // ✅ inside async function
+    await user.save();
 
     res.json({
       success: true,
