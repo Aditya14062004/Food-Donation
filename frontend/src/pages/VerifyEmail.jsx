@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
 
 const VerifyEmail = () => {
@@ -7,30 +8,32 @@ const VerifyEmail = () => {
   const navigate = useNavigate();
 
   const [otp, setOtp] = useState("");
-  const [loading, setLoading] = useState(false);
 
   if (!state?.email || !state?.role) {
     navigate("/");
     return null;
   }
 
-  const verifyOtp = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      await api.post("/auth/verify-email", {
-        email: state.email,
-        role: state.role,
-        otp,
-      });
-
+  // ✅ VERIFY EMAIL MUTATION
+  const verifyEmailMutation = useMutation({
+    mutationFn: (payload) => api.post("/auth/verify-email", payload),
+    onSuccess: () => {
       alert("Email verified successfully. Please login.");
       navigate("/");
-    } catch (err) {
+    },
+    onError: (err) => {
       alert(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const verifyOtp = (e) => {
+    e.preventDefault();
+
+    verifyEmailMutation.mutate({
+      email: state.email,
+      role: state.role,
+      otp,
+    });
   };
 
   return (
@@ -56,10 +59,12 @@ const VerifyEmail = () => {
         />
 
         <button
-          disabled={loading}
+          disabled={verifyEmailMutation.isPending}
           className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg disabled:opacity-50"
         >
-          {loading ? "Verifying..." : "Verify Email"}
+          {verifyEmailMutation.isPending
+            ? "Verifying..."
+            : "Verify Email"}
         </button>
 
         <p

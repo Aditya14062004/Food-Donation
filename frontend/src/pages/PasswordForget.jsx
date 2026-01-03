@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
 
 const inputClass =
@@ -10,6 +11,30 @@ const errorClass = "text-red-400 text-sm mb-2";
 
 const PasswordForgot = () => {
   const navigate = useNavigate();
+
+  // 🔐 GENERATE OTP
+  const generateOtpMutation = useMutation({
+    mutationFn: (payload) => api.post("/auth/generate-otp", payload),
+    onSuccess: (_, variables) => {
+      alert("OTP sent to your email");
+      variables.setFieldValue("step", "reset");
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || err.message);
+    },
+  });
+
+  // 🔁 RESET PASSWORD
+  const resetPasswordMutation = useMutation({
+    mutationFn: (payload) => api.post("/auth/reset-password", payload),
+    onSuccess: () => {
+      alert("Password reset successful");
+      navigate("/");
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || err.message);
+    },
+  });
 
   const initialValues = {
     step: "otp",
@@ -40,34 +65,26 @@ const PasswordForgot = () => {
     }),
   });
 
-  const submitHandler = async (values, { setSubmitting, setFieldValue }) => {
-    try {
-      if (values.step === "otp") {
-        await api.post("/auth/generate-otp", {
-          email: values.email,
-          role: values.role,
-        });
-
-        alert("OTP sent to your email");
-        setFieldValue("step", "reset");
-        return;
-      }
-
-      await api.post("/auth/reset-password", {
+  const submitHandler = (values, { setFieldValue }) => {
+    if (values.step === "otp") {
+      generateOtpMutation.mutate({
         email: values.email,
         role: values.role,
-        otp: values.otp,
-        newPassword: values.newPassword,
+        setFieldValue,
       });
-
-      alert("Password reset successful");
-      navigate("/");
-    } catch (err) {
-      alert(err.response?.data?.message || err.message);
-    } finally {
-      setSubmitting(false);
+      return;
     }
+
+    resetPasswordMutation.mutate({
+      email: values.email,
+      role: values.role,
+      otp: values.otp,
+      newPassword: values.newPassword,
+    });
   };
+
+  const isLoading =
+    generateOtpMutation.isPending || resetPasswordMutation.isPending;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
@@ -76,7 +93,7 @@ const PasswordForgot = () => {
         validationSchema={validationSchema}
         onSubmit={submitHandler}
       >
-        {({ values, isSubmitting }) => (
+        {({ values }) => (
           <Form className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 flex flex-col gap-3 text-white">
             <h2 className="text-2xl font-bold text-center">
               {values.step === "otp" ? "Forgot Password" : "Reset Password"}
@@ -84,15 +101,9 @@ const PasswordForgot = () => {
 
             {/* ROLE */}
             <Field as="select" name="role" className={inputClass}>
-              <option className="text-black" value="admin">
-                Admin
-              </option>
-              <option className="text-black" value="ngo">
-                NGO
-              </option>
-              <option className="text-black" value="restaurant">
-                Restaurant
-              </option>
+              <option className="text-black" value="admin">Admin</option>
+              <option className="text-black" value="ngo">NGO</option>
+              <option className="text-black" value="restaurant">Restaurant</option>
             </Field>
 
             {/* EMAIL */}
@@ -107,11 +118,7 @@ const PasswordForgot = () => {
             {/* OTP + PASSWORD */}
             {values.step === "reset" && (
               <>
-                <Field
-                  name="otp"
-                  placeholder="OTP"
-                  className={inputClass}
-                />
+                <Field name="otp" placeholder="OTP" className={inputClass} />
                 <ErrorMessage name="otp" component="p" className={errorClass} />
 
                 <Field
@@ -130,10 +137,10 @@ const PasswordForgot = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg disabled:opacity-50"
             >
-              {isSubmitting
+              {isLoading
                 ? "Please wait..."
                 : values.step === "otp"
                 ? "Send OTP"

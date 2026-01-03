@@ -1,54 +1,61 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import api from "../api/api";
 import Header from "../compoenents/Header";
 import LocationCard from "../compoenents/LocationCard";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 const RestaurantDashboard = () => {
-  const [ngos, setNgos] = useState([]);
+  const queryClient = useQueryClient();
+
   const [foodName, setFoodName] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  // Fetch nearest NGOs
-  useEffect(() => {
-    const fetchNgos = async () => {
-      try {
-        const res = await api.get("/restaurant/nearest-ngos");
-        setNgos(res.data);
-      } catch (error) {
-        console.error(error);
-        alert("Failed to load nearby NGOs");
-      }
-    };
-    fetchNgos();
-  }, []);
+  // ✅ FETCH NEAREST NGOs
+  const {
+    data: ngos = [],
+    isLoading: ngosLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["nearest-ngos"],
+    queryFn: async () => {
+      const res = await api.get("/restaurant/nearest-ngos");
+      return res.data;
+    },
+  });
 
-  // Submit donation
-  const submitDonation = async () => {
+  // ✅ SUBMIT DONATION
+  const donateMutation = useMutation({
+    mutationFn: (payload) => api.post("/restaurant/donate", payload),
+    onSuccess: () => {
+      alert("Donation added successfully");
+      setFoodName("");
+      setQuantity("");
+
+      // optional: refresh NGOs or other dependent data
+      queryClient.invalidateQueries({ queryKey: ["nearest-ngos"] });
+    },
+    onError: () => {
+      alert("Failed to add donation");
+    },
+  });
+
+  const submitDonation = () => {
     if (!foodName || !quantity) {
       alert("Please fill all fields");
       return;
     }
 
-    try {
-      setLoading(true);
-      await api.post("/restaurant/donate", { foodName, quantity });
-      alert("Donation added successfully");
-      setFoodName("");
-      setQuantity("");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to add donation");
-    } finally {
-      setLoading(false);
-    }
+    donateMutation.mutate({ foodName, quantity });
   };
 
   return (
     <>
       <Header />
 
-      {/* FULL PAGE BACKGROUND */}
       <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 text-white pt-10 px-4">
 
         {/* ADD DONATION CARD */}
@@ -74,10 +81,10 @@ const RestaurantDashboard = () => {
 
             <button
               onClick={submitDonation}
-              disabled={loading}
+              disabled={donateMutation.isPending}
               className="bg-purple-600 hover:bg-purple-700 py-2 rounded-lg font-semibold transition disabled:opacity-50"
             >
-              {loading ? "Submitting..." : "Add Donation"}
+              {donateMutation.isPending ? "Submitting..." : "Add Donation"}
             </button>
           </div>
         </div>
@@ -88,7 +95,13 @@ const RestaurantDashboard = () => {
             Nearby NGOs
           </h2>
 
-          {ngos.length === 0 ? (
+          {ngosLoading ? (
+            <p className="text-center text-indigo-200">Loading NGOs...</p>
+          ) : isError ? (
+            <p className="text-center text-red-400">
+              Failed to load nearby NGOs
+            </p>
+          ) : ngos.length === 0 ? (
             <p className="text-center text-indigo-200">
               No NGOs found nearby
             </p>

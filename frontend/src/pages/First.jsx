@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
 
 const inputClass =
@@ -23,6 +24,33 @@ const First = () => {
     return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
   };
 
+  // 🔐 LOGIN MUTATION
+  const loginMutation = useMutation({
+    mutationFn: (payload) => api.post("/auth/login", payload),
+    onSuccess: ({ data }, variables) => {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", variables.role);
+      navigate(`/${variables.role}`);
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || err.message);
+    },
+  });
+
+  // 📝 SIGNUP MUTATION
+  const signupMutation = useMutation({
+    mutationFn: (payload) => api.post("/auth/signup", payload),
+    onSuccess: (_, variables) => {
+      alert("Signup successful. Please verify your email.");
+      navigate("/verify-email", {
+        state: { email: variables.email, role: variables.role },
+      });
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || err.message);
+    },
+  });
+
   const initialValues = {
     mode: "login",
     role: "restaurant",
@@ -41,9 +69,7 @@ const First = () => {
       then: () => Yup.string().required("Name is required"),
     }),
 
-    email: Yup.string()
-      .email("Invalid email")
-      .required("Email is required"),
+    email: Yup.string().email("Invalid email").required("Email is required"),
 
     password: Yup.string()
       .min(6, "Minimum 6 characters")
@@ -63,47 +89,35 @@ const First = () => {
     }),
   });
 
-  const submitHandler = async (values, { setSubmitting }) => {
-    try {
-      const { mode, role } = values;
+  const submitHandler = async (values) => {
+    const { mode, role } = values;
 
-      if (mode === "signup") {
-        const payload = {
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          role,
-        };
-
-        if (role !== "admin") {
-          payload.address = values.address;
-          payload.contactNo = values.contactNo;
-          payload.coordinates = await getCoordinatesFromAddress(values.address);
-        }
-
-        await api.post("/auth/signup", payload);
-        alert("Signup successful. Please verify your email.");
-        navigate("/verify-email", {
-          state: { email: values.email, role },
-        });
-        return;
-      }
-
-      const { data } = await api.post("/auth/login", {
+    if (mode === "signup") {
+      const payload = {
+        name: values.name,
         email: values.email,
         password: values.password,
         role,
-      });
+      };
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", role);
-      navigate(`/${role}`);
-    } catch (err) {
-      alert(err.response?.data?.message || err.message);
-    } finally {
-      setSubmitting(false);
+      if (role !== "admin") {
+        payload.address = values.address;
+        payload.contactNo = values.contactNo;
+        payload.coordinates = await getCoordinatesFromAddress(values.address);
+      }
+
+      signupMutation.mutate(payload);
+      return;
     }
+
+    loginMutation.mutate({
+      email: values.email,
+      password: values.password,
+      role,
+    });
   };
+
+  const isLoading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
@@ -112,32 +126,18 @@ const First = () => {
         validationSchema={validationSchema}
         onSubmit={submitHandler}
       >
-        {({ values, setFieldValue, isSubmitting }) => (
+        {({ values, setFieldValue }) => (
           <Form className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 flex flex-col gap-3 text-white">
             <h2 className="text-2xl font-bold text-center">
               {values.mode === "login" ? "Welcome Back" : "Create Account"}
             </h2>
 
-            <p className="text-sm text-center text-indigo-200 mb-2">
-              {values.mode === "login"
-                ? "Login to continue making an impact"
-                : "Join us in reducing food waste"}
-            </p>
-
-            {/* ROLE */}
             <Field as="select" name="role" className={inputClass}>
-              <option className="text-black" value="admin">
-                Admin
-              </option>
-              <option className="text-black" value="ngo">
-                NGO
-              </option>
-              <option className="text-black" value="restaurant">
-                Restaurant
-              </option>
+              <option className="text-black" value="admin">Admin</option>
+              <option className="text-black" value="ngo">NGO</option>
+              <option className="text-black" value="restaurant">Restaurant</option>
             </Field>
 
-            {/* NAME */}
             {values.mode === "signup" && (
               <>
                 <Field name="name" placeholder="Name" className={inputClass} />
@@ -145,71 +145,38 @@ const First = () => {
               </>
             )}
 
-            {/* EMAIL */}
-            <Field
-              name="email"
-              type="email"
-              placeholder="Email"
-              className={inputClass}
-            />
+            <Field name="email" type="email" placeholder="Email" className={inputClass} />
             <ErrorMessage name="email" component="p" className={errorClass} />
 
-            {/* PASSWORD */}
-            <Field
-              name="password"
-              type="password"
-              placeholder="Password"
-              className={inputClass}
-            />
-            <ErrorMessage
-              name="password"
-              component="p"
-              className={errorClass}
-            />
+            <Field name="password" type="password" placeholder="Password" className={inputClass} />
+            <ErrorMessage name="password" component="p" className={errorClass} />
 
-            {/* ADDRESS + CONTACT */}
             {values.mode === "signup" && values.role !== "admin" && (
               <>
-                <Field
-                  name="address"
-                  placeholder="Address (e.g. Rajendra Nagar, Indore)"
-                  className={inputClass}
-                />
-                <ErrorMessage
-                  name="address"
-                  component="p"
-                  className={errorClass}
-                />
+                <Field name="address" placeholder="Address" className={inputClass} />
+                <ErrorMessage name="address" component="p" className={errorClass} />
 
-                <Field
-                  name="contactNo"
-                  placeholder="Contact Number"
-                  className={inputClass}
-                />
-                <ErrorMessage
-                  name="contactNo"
-                  component="p"
-                  className={errorClass}
-                />
+                <Field name="contactNo" placeholder="Contact Number" className={inputClass} />
+                <ErrorMessage name="contactNo" component="p" className={errorClass} />
               </>
             )}
 
-            {/* FORGOT PASSWORD */}
-            {values.mode === "login" && (
-              <p
-                className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
-                onClick={() => navigate("/forgotpassword")}
-              >
-                Forgot password?
-              </p>
-            )}
+            {/* FORGOT PASSWORD */} 
+            {values.mode === "login" && ( <p className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
+              onClick={() => navigate("/forgotpassword")} > 
+              Forgot password? 
+            </p>)}
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="mt-2 bg-purple-600 hover:bg-purple-700 transition rounded-lg py-2 font-semibold shadow-lg"
             >
-              {values.mode === "login" ? "Login" : "Sign Up"}
+              {isLoading
+                ? "Please wait..."
+                : values.mode === "login"
+                ? "Login"
+                : "Sign Up"}
             </button>
 
             <p className="text-sm text-center text-indigo-200 mt-2">

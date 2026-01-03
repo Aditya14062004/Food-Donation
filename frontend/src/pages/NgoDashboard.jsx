@@ -1,35 +1,36 @@
-import { useEffect, useState } from "react";
-import api from "../api/api";
 import Header from "../compoenents/Header";
 import DonationCard from "../compoenents/DonationCard";
+import api from "../api/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const NgoDashboard = () => {
-  const [donations, setDonations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchDonations = async () => {
-      try {
-        const res = await api.get("/ngo/available-donations");
-        setDonations(res.data);
-      } catch {
-        alert("Failed to load donations");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDonations();
-  }, []);
+  // ✅ FETCH DONATIONS
+  const {
+    data: donations = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["ngo-donations"],
+    queryFn: async () => {
+      const res = await api.get("/ngo/available-donations");
+      return res.data;
+    },
+  });
 
-  const acceptDonation = async (id) => {
-    try {
-      await api.post(`/ngo/accept-donation/${id}`);
+  // ✅ ACCEPT DONATION
+  const acceptDonationMutation = useMutation({
+    mutationFn: (id) => api.post(`/ngo/accept-donation/${id}`),
+    onSuccess: () => {
       alert("Donation accepted");
-      setDonations((prev) => prev.filter((d) => d._id !== id));
-    } catch {
+      // 🔄 Refetch donations automatically
+      queryClient.invalidateQueries({ queryKey: ["ngo-donations"] });
+    },
+    onError: () => {
       alert("Failed to accept donation");
-    }
-  };
+    },
+  });
 
   return (
     <>
@@ -40,8 +41,12 @@ const NgoDashboard = () => {
           Available Donations Near You
         </h2>
 
-        {loading ? (
+        {isLoading ? (
           <p className="text-center text-indigo-200">Loading...</p>
+        ) : isError ? (
+          <p className="text-center text-red-400">
+            Failed to load donations
+          </p>
         ) : donations.length === 0 ? (
           <p className="text-center text-indigo-200">
             No donations available nearby
@@ -57,7 +62,9 @@ const NgoDashboard = () => {
                 foodName={d.foodName}
                 quantity={d.quantity}
                 distanceKm={d.distanceKm}
-                onAccept={() => acceptDonation(d._id)}
+                onAccept={() =>
+                  acceptDonationMutation.mutate(d._id)
+                }
               />
             ))}
           </div>
