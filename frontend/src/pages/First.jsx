@@ -24,11 +24,11 @@ const First = () => {
     return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
   };
 
-  // 🔐 LOGIN MUTATION
+  // 🔐 LOGIN (COOKIE BASED)
   const loginMutation = useMutation({
     mutationFn: (payload) => api.post("/auth/login", payload),
-    onSuccess: ({ data }, variables) => {
-      localStorage.setItem("token", data.token);
+    onSuccess: (_, variables) => {
+      // ✅ ONLY store role (UI purpose)
       localStorage.setItem("role", variables.role);
       navigate(`/${variables.role}`);
     },
@@ -37,7 +37,7 @@ const First = () => {
     },
   });
 
-  // 📝 SIGNUP MUTATION
+  // 📝 SIGNUP
   const signupMutation = useMutation({
     mutationFn: (payload) => api.post("/auth/signup", payload),
     onSuccess: (_, variables) => {
@@ -161,11 +161,14 @@ const First = () => {
               </>
             )}
 
-            {/* FORGOT PASSWORD */} 
-            {values.mode === "login" && ( <p className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
-              onClick={() => navigate("/forgotpassword")} > 
-              Forgot password? 
-            </p>)}
+            {values.mode === "login" && (
+              <p
+                className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
+                onClick={() => navigate("/forgotpassword")}
+              >
+                Forgot password?
+              </p>
+            )}
 
             <button
               type="submit"

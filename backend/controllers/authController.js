@@ -18,6 +18,13 @@ const generateToken = (user, role) =>
     expiresIn: "7d",
   });
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
 // ================= SIGNUP =================
 exports.signup = async (req, res) => {
   try {
@@ -41,7 +48,6 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    // 🔐 Email OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const userData = {
@@ -81,7 +87,7 @@ exports.signup = async (req, res) => {
   }
 };
 
-// ================= VERIFY EMAIL OTP =================
+// ================= VERIFY EMAIL =================
 exports.verifyEmail = async (req, res) => {
   try {
     const { email, role, otp } = req.body;
@@ -113,7 +119,7 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
-// ================= LOGIN =================
+// ================= LOGIN (HTTP-ONLY COOKIE) =================
 exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -137,15 +143,24 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user, role);
 
+    // 🔐 SET TOKEN IN HTTP-ONLY COOKIE
+    res.cookie("token", token, cookieOptions);
+
     res.json({
       success: true,
-      token,
       role,
+      message: "Login successful",
     });
   } catch (error) {
     console.error("LOGIN ERROR:", error);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// ================= LOGOUT =================
+exports.logout = async (req, res) => {
+  res.clearCookie("token", cookieOptions);
+  res.json({ success: true, message: "Logged out successfully" });
 };
 
 // ================= FORGOT PASSWORD =================

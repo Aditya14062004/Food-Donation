@@ -1,26 +1,20 @@
-import React, { useEffect, useState } from "react";
 import Header from "../compoenents/Header";
 import api from "../api/api";
+import { useQuery } from "@tanstack/react-query";
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    restaurants: 0,
-    ngos: 0,
-    donations: 0,
-    accepted: 0,
+  // ✅ FETCH ADMIN STATS USING REACT QUERY
+  const {
+    data: stats,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const res = await api.get("/admin/stats");
+      return res.data;
+    },
   });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get("/admin/stats");
-        setStats(res.data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchStats();
-  }, []);
 
   return (
     <>
@@ -32,12 +26,20 @@ const AdminDashboard = () => {
           Admin Dashboard
         </h1>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
-          <StatCard title="Restaurants" value={stats.restaurants} />
-          <StatCard title="NGOs" value={stats.ngos} />
-          <StatCard title="Total Donations" value={stats.donations} />
-          <StatCard title="Accepted Donations" value={stats.accepted} />
-        </div>
+        {isLoading ? (
+          <p className="text-center text-indigo-200">Loading stats...</p>
+        ) : isError ? (
+          <p className="text-center text-red-400">
+            Failed to load admin stats
+          </p>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+            <StatCard title="Restaurants" value={stats.restaurants} />
+            <StatCard title="NGOs" value={stats.ngos} />
+            <StatCard title="Total Donations" value={stats.donations} />
+            <StatCard title="Accepted Donations" value={stats.accepted} />
+          </div>
+        )}
       </div>
     </>
   );
