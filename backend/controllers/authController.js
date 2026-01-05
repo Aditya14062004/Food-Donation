@@ -18,10 +18,11 @@ const generateToken = (user, role) =>
     expiresIn: "7d",
   });
 
-const cookieOptions = {
+// 🔐 SINGLE SOURCE OF TRUTH FOR COOKIE OPTIONS
+const authCookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
+  secure: true,        // REQUIRED (Render/production is HTTPS)
+  sameSite: "none",    // REQUIRED for cross-domain frontend
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
@@ -106,7 +107,6 @@ exports.verifyEmail = async (req, res) => {
     user.isVerified = true;
     user.emailOtp = null;
     user.emailOtpExpiry = null;
-
     await user.save();
 
     res.json({
@@ -147,32 +147,34 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user, role);
 
-    // 🔐 PRODUCTION-SAFE COOKIE
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,        // 🔴 MUST be true in hosted backend
-      sameSite: "none",    // 🔴 REQUIRED for frontend on different domain
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    // 🔐 SET COOKIE (PRODUCTION SAFE)
+    res.cookie("token", token, authCookieOptions);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       role,
       message: "Login successful",
     });
   } catch (error) {
     console.error("LOGIN ERROR:", error);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // ================= LOGOUT =================
 exports.logout = async (req, res) => {
-  res.clearCookie("token", cookieOptions);
-  res.json({ success: true, message: "Logged out successfully" });
+  res.clearCookie("token", {
+    ...authCookieOptions,
+    maxAge: 0,
+  });
+
+  res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
 };
 
-// ================= FORGOT PASSWORD =================
+// ================= FORGOT PASSWORD (OTP) =================
 exports.generateOTP = async (req, res) => {
   try {
     const { email, role } = req.body;
@@ -213,7 +215,6 @@ exports.resetPassword = async (req, res) => {
     user.password = newPassword;
     user.otp = null;
     user.otpExpiry = null;
-
     await user.save();
 
     await sendEmail(
