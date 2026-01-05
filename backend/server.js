@@ -66,6 +66,7 @@ app.use(
       connectSrc: [
         "'self'",
         "http://localhost:5000",
+        "https://food-donation-dhrg.onrender.com",
         "http://localhost:5173",
         "https://beamish-kataifi-95ab4c.netlify.app",
         "https://neon-speculoos-b5febd.netlify.app",

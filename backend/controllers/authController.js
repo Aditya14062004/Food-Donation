@@ -125,6 +125,10 @@ exports.login = async (req, res) => {
     const { email, password, role } = req.body;
     const Model = getModel(role);
 
+    if (!Model) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
     const user = await Model.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -143,17 +147,22 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user, role);
 
-    // 🔐 SET TOKEN IN HTTP-ONLY COOKIE
-    res.cookie("token", token, cookieOptions);
+    // 🔐 PRODUCTION-SAFE COOKIE
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,        // 🔴 MUST be true in hosted backend
+      sameSite: "none",    // 🔴 REQUIRED for frontend on different domain
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
-    res.json({
+    return res.status(200).json({
       success: true,
       role,
       message: "Login successful",
     });
   } catch (error) {
     console.error("LOGIN ERROR:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

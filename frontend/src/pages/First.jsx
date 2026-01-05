@@ -13,6 +13,7 @@ const errorClass = "text-red-400 text-sm mb-2";
 const First = () => {
   const navigate = useNavigate();
 
+  // 🌍 Convert address → coordinates
   const getCoordinatesFromAddress = async (addr) => {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -24,12 +25,11 @@ const First = () => {
     return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
   };
 
-  // 🔐 LOGIN (COOKIE BASED)
+  // 🔐 LOGIN
   const loginMutation = useMutation({
     mutationFn: (payload) => api.post("/auth/login", payload),
     onSuccess: (_, variables) => {
-      // ✅ ONLY store role (UI purpose)
-      localStorage.setItem("role", variables.role);
+      localStorage.setItem("role", variables.role); // UI only
       navigate(`/${variables.role}`);
     },
     onError: (err) => {
@@ -69,7 +69,9 @@ const First = () => {
       then: () => Yup.string().required("Name is required"),
     }),
 
-    email: Yup.string().email("Invalid email").required("Email is required"),
+    email: Yup.string()
+      .email("Invalid email")
+      .required("Email is required"),
 
     password: Yup.string()
       .min(6, "Minimum 6 characters")
@@ -89,7 +91,8 @@ const First = () => {
     }),
   });
 
-  const submitHandler = async (values) => {
+  // 🚀 SUBMIT HANDLER (with address error handling)
+  const submitHandler = async (values, { setFieldError }) => {
     const { mode, role } = values;
 
     if (mode === "signup") {
@@ -101,15 +104,27 @@ const First = () => {
       };
 
       if (role !== "admin") {
-        payload.address = values.address;
-        payload.contactNo = values.contactNo;
-        payload.coordinates = await getCoordinatesFromAddress(values.address);
+        try {
+          payload.address = values.address;
+          payload.contactNo = values.contactNo;
+
+          // 🌍 Get coordinates
+          payload.coordinates = await getCoordinatesFromAddress(values.address);
+        } catch (error) {
+          // ❌ Invalid address → inline notification
+          setFieldError(
+            "address",
+            "Address not found. Please enter a valid location (e.g. Rajendra Nagar, Indore)"
+          );
+          return; // stop signup
+        }
       }
 
       signupMutation.mutate(payload);
       return;
     }
 
+    // 🔐 LOGIN
     loginMutation.mutate({
       email: values.email,
       password: values.password,
@@ -117,7 +132,8 @@ const First = () => {
     });
   };
 
-  const isLoading = loginMutation.isPending || signupMutation.isPending;
+  const isLoading =
+    loginMutation.isPending || signupMutation.isPending;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
@@ -132,12 +148,14 @@ const First = () => {
               {values.mode === "login" ? "Welcome Back" : "Create Account"}
             </h2>
 
+            {/* ROLE */}
             <Field as="select" name="role" className={inputClass}>
               <option className="text-black" value="admin">Admin</option>
               <option className="text-black" value="ngo">NGO</option>
               <option className="text-black" value="restaurant">Restaurant</option>
             </Field>
 
+            {/* NAME */}
             {values.mode === "signup" && (
               <>
                 <Field name="name" placeholder="Name" className={inputClass} />
@@ -145,22 +163,52 @@ const First = () => {
               </>
             )}
 
-            <Field name="email" type="email" placeholder="Email" className={inputClass} />
+            {/* EMAIL */}
+            <Field
+              name="email"
+              type="email"
+              placeholder="Email"
+              className={inputClass}
+            />
             <ErrorMessage name="email" component="p" className={errorClass} />
 
-            <Field name="password" type="password" placeholder="Password" className={inputClass} />
+            {/* PASSWORD */}
+            <Field
+              name="password"
+              type="password"
+              placeholder="Password"
+              className={inputClass}
+            />
             <ErrorMessage name="password" component="p" className={errorClass} />
 
+            {/* ADDRESS + CONTACT */}
             {values.mode === "signup" && values.role !== "admin" && (
               <>
-                <Field name="address" placeholder="Address" className={inputClass} />
-                <ErrorMessage name="address" component="p" className={errorClass} />
+                <Field
+                  name="address"
+                  placeholder="Address (e.g. Rajendra Nagar, Indore)"
+                  className={inputClass}
+                />
+                <ErrorMessage
+                  name="address"
+                  component="p"
+                  className={errorClass}
+                />
 
-                <Field name="contactNo" placeholder="Contact Number" className={inputClass} />
-                <ErrorMessage name="contactNo" component="p" className={errorClass} />
+                <Field
+                  name="contactNo"
+                  placeholder="Contact Number"
+                  className={inputClass}
+                />
+                <ErrorMessage
+                  name="contactNo"
+                  component="p"
+                  className={errorClass}
+                />
               </>
             )}
 
+            {/* FORGOT PASSWORD */}
             {values.mode === "login" && (
               <p
                 className="text-sm text-purple-300 cursor-pointer text-center hover:underline"
@@ -170,6 +218,7 @@ const First = () => {
               </p>
             )}
 
+            {/* SUBMIT */}
             <button
               type="submit"
               disabled={isLoading}
@@ -182,6 +231,7 @@ const First = () => {
                 : "Sign Up"}
             </button>
 
+            {/* TOGGLE MODE */}
             <p className="text-sm text-center text-indigo-200 mt-2">
               {values.mode === "login" ? (
                 <>
