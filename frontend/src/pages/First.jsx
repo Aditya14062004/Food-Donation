@@ -1,9 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
 import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
+import authSchema from "../validation/authSchema";
 
 const inputClass =
   "bg-white/20 border border-white/30 rounded-lg px-4 py-2 mt-1 mb-1 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white";
@@ -29,7 +29,7 @@ const First = () => {
   const loginMutation = useMutation({
     mutationFn: (payload) => api.post("/auth/login", payload),
     onSuccess: (_, variables) => {
-      localStorage.setItem("role", variables.role); // UI only
+      localStorage.setItem("role", variables.role);
       navigate(`/${variables.role}`);
     },
     onError: (err) => {
@@ -61,37 +61,7 @@ const First = () => {
     contactNo: "",
   };
 
-  const validationSchema = Yup.object({
-    role: Yup.string().required(),
-
-    name: Yup.string().when("mode", {
-      is: "signup",
-      then: () => Yup.string().required("Name is required"),
-    }),
-
-    email: Yup.string()
-      .email("Invalid email")
-      .required("Email is required"),
-
-    password: Yup.string()
-      .min(6, "Minimum 6 characters")
-      .required("Password is required"),
-
-    address: Yup.string().when(["mode", "role"], {
-      is: (mode, role) => mode === "signup" && role !== "admin",
-      then: () => Yup.string().required("Address is required"),
-    }),
-
-    contactNo: Yup.string().when(["mode", "role"], {
-      is: (mode, role) => mode === "signup" && role !== "admin",
-      then: () =>
-        Yup.string()
-          .matches(/^[0-9]{10}$/, "Enter valid 10-digit number")
-          .required("Contact number is required"),
-    }),
-  });
-
-  // 🚀 SUBMIT HANDLER (with address error handling)
+  // 🚀 SUBMIT HANDLER
   const submitHandler = async (values, { setFieldError }) => {
     const { mode, role } = values;
 
@@ -107,16 +77,13 @@ const First = () => {
         try {
           payload.address = values.address;
           payload.contactNo = values.contactNo;
-
-          // 🌍 Get coordinates
           payload.coordinates = await getCoordinatesFromAddress(values.address);
-        } catch (error) {
-          // ❌ Invalid address → inline notification
+        } catch (err) {
           setFieldError(
             "address",
             "Address not found. Please enter a valid location (e.g. Rajendra Nagar, Indore)"
           );
-          return; // stop signup
+          return;
         }
       }
 
@@ -139,7 +106,7 @@ const First = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
       <Formik
         initialValues={initialValues}
-        validationSchema={validationSchema}
+        validationSchema={authSchema}
         onSubmit={submitHandler}
       >
         {({ values, setFieldValue }) => (
@@ -164,47 +131,21 @@ const First = () => {
             )}
 
             {/* EMAIL */}
-            <Field
-              name="email"
-              type="email"
-              placeholder="Email"
-              className={inputClass}
-            />
+            <Field name="email" type="email" placeholder="Email" className={inputClass} />
             <ErrorMessage name="email" component="p" className={errorClass} />
 
             {/* PASSWORD */}
-            <Field
-              name="password"
-              type="password"
-              placeholder="Password"
-              className={inputClass}
-            />
+            <Field name="password" type="password" placeholder="Password" className={inputClass} />
             <ErrorMessage name="password" component="p" className={errorClass} />
 
             {/* ADDRESS + CONTACT */}
             {values.mode === "signup" && values.role !== "admin" && (
               <>
-                <Field
-                  name="address"
-                  placeholder="Address (e.g. Rajendra Nagar, Indore)"
-                  className={inputClass}
-                />
-                <ErrorMessage
-                  name="address"
-                  component="p"
-                  className={errorClass}
-                />
+                <Field name="address" placeholder="Address" className={inputClass} />
+                <ErrorMessage name="address" component="p" className={errorClass} />
 
-                <Field
-                  name="contactNo"
-                  placeholder="Contact Number"
-                  className={inputClass}
-                />
-                <ErrorMessage
-                  name="contactNo"
-                  component="p"
-                  className={errorClass}
-                />
+                <Field name="contactNo" placeholder="Contact Number" className={inputClass} />
+                <ErrorMessage name="contactNo" component="p" className={errorClass} />
               </>
             )}
 
@@ -231,7 +172,7 @@ const First = () => {
                 : "Sign Up"}
             </button>
 
-            {/* TOGGLE MODE */}
+            {/* TOGGLE */}
             <p className="text-sm text-center text-indigo-200 mt-2">
               {values.mode === "login" ? (
                 <>

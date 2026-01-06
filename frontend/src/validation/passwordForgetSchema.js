@@ -1,15 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
-import passwordForgetSchema from "../validation/passwordForgetSchema";
 
 const inputClass =
   "bg-white/20 border border-white/30 rounded-lg px-4 py-2 mt-1 mb-1 placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white";
 
 const errorClass = "text-red-400 text-sm mb-2";
 
-const PasswordForgot = () => {
+const PasswordForget = () => {
   const navigate = useNavigate();
 
   // 🔐 GENERATE OTP
@@ -44,6 +44,27 @@ const PasswordForgot = () => {
     newPassword: "",
   };
 
+  const validationSchema = Yup.object({
+    role: Yup.string().required("Role is required"),
+
+    email: Yup.string()
+      .email("Invalid email")
+      .required("Email is required"),
+
+    otp: Yup.string().when("step", {
+      is: "reset",
+      then: () => Yup.string().required("OTP is required"),
+    }),
+
+    newPassword: Yup.string().when("step", {
+      is: "reset",
+      then: () =>
+        Yup.string()
+          .min(6, "Minimum 6 characters")
+          .required("New password is required"),
+    }),
+  });
+
   const submitHandler = (values, { setFieldValue }) => {
     if (values.step === "otp") {
       generateOtpMutation.mutate({
@@ -69,7 +90,7 @@ const PasswordForgot = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 px-4">
       <Formik
         initialValues={initialValues}
-        validationSchema={passwordForgetSchema}
+        validationSchema={validationSchema}
         onSubmit={submitHandler}
       >
         {({ values }) => (
@@ -139,4 +160,4 @@ const PasswordForgot = () => {
   );
 };
 
-export default PasswordForgot;
+export default PasswordForget;
