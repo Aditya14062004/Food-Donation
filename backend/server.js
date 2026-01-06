@@ -20,7 +20,7 @@ const allowedOrigins = [
   "https://beamish-kataifi-95ab4c.netlify.app",
   "https://neon-speculoos-b5febd.netlify.app",
   "https://velvety-piroshki-3ac39f.netlify.app",
-  "https://steady-pudding-f69814.netlify.app/"
+  "https://steady-pudding-f69814.netlify.app"
 ];
 
 app.use(
