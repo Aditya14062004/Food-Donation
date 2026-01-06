@@ -23,6 +23,7 @@ app.use(
       "http://localhost:5173",
       "https://beamish-kataifi-95ab4c.netlify.app",
       "https://neon-speculoos-b5febd.netlify.app",
+      "https://velvety-piroshki-3ac39f.netlify.app/"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -71,6 +72,7 @@ app.use(
         "https://beamish-kataifi-95ab4c.netlify.app",
         "https://neon-speculoos-b5febd.netlify.app",
         "https://nominatim.openstreetmap.org",
+        "https://velvety-piroshki-3ac39f.netlify.app/"
       ],
 
       fontSrc: ["'self'", "data:"],
