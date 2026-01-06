@@ -8,85 +8,45 @@ const connectDB = require("./config/db");
 const app = express();
 connectDB();
 
-// ================= REQUEST LOGGER =================
-const logRequest = (req, res, next) => {
-  console.log(`[${new Date().toLocaleString()}] Request to: ${req.originalUrl}`);
+// ================= LOGGER =================
+app.use((req, res, next) => {
+  console.log(`[${new Date().toLocaleString()}] ${req.method} ${req.originalUrl}`);
   next();
-};
-app.use(logRequest);
+});
 
-// ================= CORS =================
-// 🔐 Required for HTTP-only cookies
+// ================= CORS (CORRECT) =================
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://beamish-kataifi-95ab4c.netlify.app",
+  "https://neon-speculoos-b5febd.netlify.app",
+  "https://velvety-piroshki-3ac39f.netlify.app",
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://beamish-kataifi-95ab4c.netlify.app",
-      "https://neon-speculoos-b5febd.netlify.app",
-      "https://velvety-piroshki-3ac39f.netlify.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // Postman / server calls
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.options("*", cors());
-
-// ================= BODY & COOKIE PARSERS =================
+// ================= PARSERS =================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ================= SECURITY HEADERS =================
+// Safe for APIs
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
-);
-
-// ================= CONTENT SECURITY POLICY =================
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'", // required for Vite dev
-      ],
-
-      styleSrc: [
-        "'self'",
-        "'unsafe-inline'", // required for Tailwind
-      ],
-
-      imgSrc: [
-        "'self'",
-        "data:",
-        "https://*.openstreetmap.org",
-      ],
-
-      connectSrc: [
-        "'self'",
-        "http://localhost:5000",
-        "https://food-donation-dhrg.onrender.com",
-        "http://localhost:5173",
-        "https://beamish-kataifi-95ab4c.netlify.app",
-        "https://neon-speculoos-b5febd.netlify.app",
-        "https://nominatim.openstreetmap.org",
-        "https://velvety-piroshki-3ac39f.netlify.app"
-      ],
-
-      fontSrc: ["'self'", "data:"],
-
-      objectSrc: ["'none'"],
-
-      frameAncestors: ["'none'"],
-
-      baseUri: ["'self'"],
-
-      formAction: ["'self'"],
-    },
   })
 );
 
