@@ -14,24 +14,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// ================= CORS (CORRECT) =================
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://beamish-kataifi-95ab4c.netlify.app",
-  "https://neon-speculoos-b5febd.netlify.app",
-  "https://velvety-piroshki-3ac39f.netlify.app",
-  "https://steady-pudding-f69814.netlify.app"
-];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Postman / server calls
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin:
+      ["http://localhost:5173",
+        "https://beamish-kataifi-95ab4c.netlify.app",
+        "https://neon-speculoos-b5febd.netlify.app",
+        "https://velvety-piroshki-3ac39f.netlify.app",
+        "https://steady-pudding-f69814.netlify.app"]
+    ,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -44,7 +35,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ================= SECURITY HEADERS =================
-// ================= SECURITY HEADERS =================
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -55,10 +45,14 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https://*.openstreetmap.org"],
         connectSrc: [
-          "'self'", 
+          "'self'",
           "https://food-donation-dhrg.onrender.com", // Your API
           "https://nominatim.openstreetmap.org",     // Map Geocoding
-          ...allowedOrigins // Automatically allows your Netlify frontend URLs
+          "http://localhost:5173",
+          "https://beamish-kataifi-95ab4c.netlify.app",
+          "https://neon-speculoos-b5febd.netlify.app",
+          "https://velvety-piroshki-3ac39f.netlify.app",
+          "https://steady-pudding-f69814.netlify.app"
         ],
         fontSrc: ["'self'", "data:"],
         objectSrc: ["'none'"],
