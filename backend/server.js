@@ -44,10 +44,27 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ================= SECURITY HEADERS =================
-// Safe for APIs
+// ================= SECURITY HEADERS =================
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https://*.openstreetmap.org"],
+        connectSrc: [
+          "'self'", 
+          "https://food-donation-dhrg.onrender.com", // Your API
+          "https://nominatim.openstreetmap.org",     // Map Geocoding
+          ...allowedOrigins // Automatically allows your Netlify frontend URLs
+        ],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [], // Required for HTTPS in 2026
+      },
+    },
   })
 );
 
