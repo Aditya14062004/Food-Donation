@@ -5,10 +5,6 @@ const api = axios.create({
   withCredentials: true, // 🔥 REQUIRED for cookies
 });
 
-// 🚫 NO request interceptor needed anymore
-// Browser automatically sends HTTP-only cookies
-
-// ✅ Global error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {

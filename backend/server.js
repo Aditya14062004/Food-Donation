@@ -46,8 +46,8 @@ app.use(
         imgSrc: ["'self'", "data:", "https://*.openstreetmap.org"],
         connectSrc: [
           "'self'",
-          "https://food-donation-dhrg.onrender.com", // Your API
-          "https://nominatim.openstreetmap.org",     // Map Geocoding
+          "https://food-donation-dhrg.onrender.com",
+          "https://nominatim.openstreetmap.org",
           "http://localhost:5173",
           "https://beamish-kataifi-95ab4c.netlify.app",
           "https://neon-speculoos-b5febd.netlify.app",

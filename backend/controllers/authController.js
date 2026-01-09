@@ -21,8 +21,8 @@ const generateToken = (user, role) =>
 // 🔐 SINGLE SOURCE OF TRUTH FOR COOKIE OPTIONS
 const authCookieOptions = {
   httpOnly: true,
-  secure: true,        // REQUIRED (Render/production is HTTPS)
-  sameSite: "none",    // REQUIRED for cross-domain frontend
+  secure: true,
+  sameSite: "none",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
@@ -146,8 +146,7 @@ exports.login = async (req, res) => {
     }
 
     const token = generateToken(user, role);
-
-    // 🔐 SET COOKIE (PRODUCTION SAFE)
+    
     res.cookie("token", token, authCookieOptions);
 
     res.status(200).json({
