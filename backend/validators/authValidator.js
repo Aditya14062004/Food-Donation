@@ -22,7 +22,7 @@ exports.signupSchema = yup.object({
     is: (role) => role !== "admin",
     then: (schema) =>
       schema
-        .matches(/^[6-9]\d{9}$/, "Invalid Indian mobile number")
+        .matches(/^[0-9]{10}$/, "Enter valid 10-digit number")
         .required(),
     otherwise: (schema) => schema.notRequired(),
   }),

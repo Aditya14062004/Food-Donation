@@ -76,7 +76,7 @@ const First = () => {
       if (role !== "admin") {
         try {
           payload.address = values.address;
-          payload.contactNo = values.contactNo;
+          payload.contactNo = String(values.contactNo).trim();
           payload.coordinates = await getCoordinatesFromAddress(values.address);
         } catch (err) {
           setFieldError(
@@ -86,6 +86,8 @@ const First = () => {
           return;
         }
       }
+
+      console.log(payload);
 
       signupMutation.mutate(payload);
       return;
@@ -116,15 +118,24 @@ const First = () => {
             </h2>
 
             {/* ROLE */}
-            <Field as="select" name="role" className={inputClass}>
-              <option className="text-black" value="admin">Admin</option>
-              <option className="text-black" value="ngo">NGO</option>
-              <option className="text-black" value="restaurant">Restaurant</option>
-            </Field>
+            {values.mode === "login" && (
+              <>
+                <Field as="select" name="role" className={inputClass}>
+                  <option className="text-black" value="admin">Admin</option>
+                  <option className="text-black" value="ngo">NGO</option>
+                  <option className="text-black" value="restaurant">Restaurant</option>
+                </Field>
+              </>
+            )}
 
             {/* NAME */}
             {values.mode === "signup" && (
               <>
+                <Field as="select" name="role" className={inputClass}>
+                  <option className="text-black" value="ngo">NGO</option>
+                  <option className="text-black" value="restaurant">Restaurant</option>
+                </Field>
+
                 <Field name="name" placeholder="Name" className={inputClass} />
                 <ErrorMessage name="name" component="p" className={errorClass} />
               </>
@@ -168,8 +179,8 @@ const First = () => {
               {isLoading
                 ? "Please wait..."
                 : values.mode === "login"
-                ? "Login"
-                : "Sign Up"}
+                  ? "Login"
+                  : "Sign Up"}
             </button>
 
             {/* TOGGLE */}
