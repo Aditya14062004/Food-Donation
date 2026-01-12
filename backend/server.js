@@ -58,7 +58,9 @@ app.use(
         ],
         fontSrc: ["'self'", "data:"],
         objectSrc: ["'none'"],
-        upgradeInsecureRequests: [], // Required for HTTPS in 2026
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+        upgradeInsecureRequests: [],
       },
     },
   })
